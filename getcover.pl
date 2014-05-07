@@ -10,7 +10,7 @@ use Data::Dumper;
 use FindBin;
 
 Getopt::Long::Configure ("bundling","auto_help","auto_version");
-$main::VERSION=0.3;
+$main::VERSION=0.4;
 my $usage = "Usage: $0 -a artist -k keywords -f filename\n";
 my @locations = ($ENV{HOME},$FindBin::Bin);
 my $file = '.getcoverrc';
@@ -41,7 +41,7 @@ my $o = {  #query
            Format => "Audio CD",
          };
 
-my @q = ( 'artist', 'keyword', 'keywords', 'title', 'mode', 'sort',  'type', 'Format', 'keyword', 'all'  );
+my @q = ( 'artist', 'keyword', 'keywords', 'title', 'mode', 'sort',  'type', 'Format', 'all'  );
 my @a = ( 'secret_key', 'max_pages', 'locale', 'token', 'associate_tag' ); 
 
 ## Args
@@ -107,21 +107,37 @@ warn "$r" if ($r && ${$o}{verbose});
 #
 if ($r && $o->{'guess'}) {
    ## Try Artist in Title
-   if ($o->{'title'} && $o->{'artist'}) {
+   if ($r && $o->{'title'} && $o->{'artist'}) {
        my %m = %query;
        $m{'title'} = $m{'artist'}." ".$m{'title'};
        delete $m{'artist'};
        sleep 1;
+       print "Trying Title search with \'$m{'title'}\'\n" if ($r && ${$o}{verbose});
        $r = asearch($amzua,$lwpua,%m);
        $i++;
        warn "$r" if ($r && ${$o}{verbose});
    } 
-   ## Switch to keyword rather than title.
+
+   ## Try Artist = Various
+   if ($r && $o->{'title'} && $o->{'artist'} && not $o->{'artist'} =~ /Various/) {
+       my %m = %query;
+       $m{'artist'} = 'Various';
+       sleep 1;
+       print "Trying All search with Artist set to \'$m{'artist'}\'\n" if ($r && ${$o}{verbose});
+       $r = asearch($amzua,$lwpua,%m);
+       $i++;
+       warn "$r" if ($r && ${$o}{verbose});
+   } 
+
+   ## Switch to all rather than title.
    if ($r && $o->{'guess'} && $o->{'title'} && $o->{'artist'}) {
        my %m = %query;
-       $m{'keywords'} = $m{'title'};
+       $m{'title'} = $m{'artist'}." ".$m{'title'};
+       $m{'all'} = $m{'title'};
        delete $m{'title'};
+       delete $m{'artist'};
        sleep 1;
+       print "Trying All search with \'$m{'all'}\'\n" if ($r && ${$o}{verbose});
        $r = asearch($amzua,$lwpua,%m);
        $i++;
        warn "$r" if ($r && ${$o}{verbose});
@@ -170,10 +186,10 @@ sub asearch {
 sub sanitise {
    my ($string) = @_;
    my $v = $string;
-   $string =~ s/\[[^\]]*\]//g;
-   $string =~ s/CD[1-9]//gi;
-   $string =~ s/Disc\s?[1-9]//gi;
-   print "sanitise ($v) = $string\n" if ${$o}{verbose} >=2;
+   $string =~ s/\s?-?\s?\[[^\]]*\]//g;
+   $string =~ s/\s?-?\s?\(?\s?CD\s?[1-9]\s?\)?//gi;
+   $string =~ s/\s?-?\s?\(?\s?Disc\s?[1-9]\s?\)?//gi;
+   print "sanitise ($v) = \'$string\'\n" if ${$o}{verbose} >=2;
    return $string;
 }
 
