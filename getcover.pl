@@ -10,7 +10,7 @@ use Data::Dumper;
 use FindBin;
 
 Getopt::Long::Configure ("bundling","auto_help","auto_version");
-$main::VERSION=0.4;
+$main::VERSION=0.5;
 my $usage = "Usage: $0 -a artist -k keywords -f filename\n";
 my @locations = ($ENV{HOME},$FindBin::Bin);
 my $file = '.getcoverrc';
@@ -189,6 +189,7 @@ sub sanitise {
    $string =~ s/\s?-?\s?\[[^\]]*\]//g;
    $string =~ s/\s?-?\s?\(?\s?CD\s?[1-9]\s?\)?//gi;
    $string =~ s/\s?-?\s?\(?\s?Disc\s?[1-9]\s?\)?//gi;
+   $string =~ s/^[1-3][0-9][0-9][0-9]\s?-?\s?//gi;
    print "sanitise ($v) = \'$string\'\n" if ${$o}{verbose} >=2;
    return $string;
 }
